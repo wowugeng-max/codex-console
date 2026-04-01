@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Tuple
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from ...database import crud
 from ...database.session import get_db
@@ -100,6 +100,8 @@ class BatchRegistrationRequest(BaseModel):
 
 class RegistrationTaskResponse(BaseModel):
     """注册任务响应"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     task_uuid: str
     status: str
@@ -111,9 +113,6 @@ class RegistrationTaskResponse(BaseModel):
     created_at: Optional[str] = None
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class BatchRegistrationResponse(BaseModel):

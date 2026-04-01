@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Body
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from ...config.constants import AccountStatus
 from ...config.settings import get_settings
@@ -47,6 +47,8 @@ def _get_proxy(request_proxy: Optional[str] = None) -> Optional[str]:
 
 class AccountResponse(BaseModel):
     """账号响应模型"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: str
     password: Optional[str] = None
@@ -64,9 +66,6 @@ class AccountResponse(BaseModel):
     cookies: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class AccountListResponse(BaseModel):

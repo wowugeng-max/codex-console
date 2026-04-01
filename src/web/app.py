@@ -11,6 +11,8 @@ import hashlib
 from typing import Optional
 from pathlib import Path
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -50,12 +52,39 @@ def create_app() -> FastAPI:
     """创建 FastAPI 应用实例"""
     settings = get_settings()
 
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        """应用生命周期管理。"""
+        import asyncio
+        from ..database.init_db import initialize_database
+
+        # 确保数据库已初始化（reload 模式下子进程也需要初始化）
+        try:
+            initialize_database()
+        except Exception as e:
+            logger.warning(f"数据库初始化: {e}")
+
+        # 设置 TaskManager 的事件循环
+        loop = asyncio.get_event_loop()
+        task_manager.set_loop(loop)
+
+        logger.info("=" * 50)
+        logger.info(f"{settings.app_name} v{settings.app_version} 启动中，程序正在伸懒腰...")
+        logger.info(f"调试模式: {settings.debug}")
+        logger.info(f"数据库连接已接好线: {settings.database_url}")
+        logger.info("=" * 50)
+
+        yield
+
+        logger.info("应用关闭，今天先收摊啦")
+
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
         description="OpenAI/Codex CLI 自动注册系统 Web UI",
         docs_url="/api/docs" if settings.debug else None,
         redoc_url="/api/redoc" if settings.debug else None,
+        lifespan=lifespan,
     )
 
     # CORS 中间件
@@ -108,6 +137,7 @@ def create_app() -> FastAPI:
     async def login_page(request: Request, next: Optional[str] = "/"):
         """登录页面"""
         return templates.TemplateResponse(
+            request,
             "login.html",
             {"request": request, "error": "", "next": next or "/"}
         )
@@ -118,6 +148,7 @@ def create_app() -> FastAPI:
         expected = get_settings().webui_access_password.get_secret_value()
         if not secrets.compare_digest(password, expected):
             return templates.TemplateResponse(
+                request,
                 "login.html",
                 {"request": request, "error": "密码错误", "next": next or "/"},
                 status_code=401
@@ -139,60 +170,34 @@ def create_app() -> FastAPI:
         """首页 - 注册页面"""
         if not _is_authenticated(request):
             return _redirect_to_login(request)
-        return templates.TemplateResponse("index.html", {"request": request})
+        return templates.TemplateResponse(request, "index.html", {"request": request})
 
     @app.get("/accounts", response_class=HTMLResponse)
     async def accounts_page(request: Request):
         """账号管理页面"""
         if not _is_authenticated(request):
             return _redirect_to_login(request)
-        return templates.TemplateResponse("accounts.html", {"request": request})
+        return templates.TemplateResponse(request, "accounts.html", {"request": request})
 
     @app.get("/email-services", response_class=HTMLResponse)
     async def email_services_page(request: Request):
         """邮箱服务管理页面"""
         if not _is_authenticated(request):
             return _redirect_to_login(request)
-        return templates.TemplateResponse("email_services.html", {"request": request})
+        return templates.TemplateResponse(request, "email_services.html", {"request": request})
 
     @app.get("/settings", response_class=HTMLResponse)
     async def settings_page(request: Request):
         """设置页面"""
         if not _is_authenticated(request):
             return _redirect_to_login(request)
-        return templates.TemplateResponse("settings.html", {"request": request})
+        return templates.TemplateResponse(request, "settings.html", {"request": request})
 
     @app.get("/payment", response_class=HTMLResponse)
     async def payment_page(request: Request):
         """支付页面"""
-        return templates.TemplateResponse("payment.html", {"request": request})
+        return templates.TemplateResponse(request, "payment.html", {"request": request})
 
-    @app.on_event("startup")
-    async def startup_event():
-        """应用启动事件"""
-        import asyncio
-        from ..database.init_db import initialize_database
-
-        # 确保数据库已初始化（reload 模式下子进程也需要初始化）
-        try:
-            initialize_database()
-        except Exception as e:
-            logger.warning(f"数据库初始化: {e}")
-
-        # 设置 TaskManager 的事件循环
-        loop = asyncio.get_event_loop()
-        task_manager.set_loop(loop)
-
-        logger.info("=" * 50)
-        logger.info(f"{settings.app_name} v{settings.app_version} 启动中，程序正在伸懒腰...")
-        logger.info(f"调试模式: {settings.debug}")
-        logger.info(f"数据库连接已接好线: {settings.database_url}")
-        logger.info("=" * 50)
-
-    @app.on_event("shutdown")
-    async def shutdown_event():
-        """应用关闭事件"""
-        logger.info("应用关闭，今天先收摊啦")
 
     return app
 

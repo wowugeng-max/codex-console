@@ -2,15 +2,20 @@
 SQLAlchemy ORM 模型定义
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, Dict, Any
 import json
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
+
+
+def now_utc() -> datetime:
+    """返回 UTC 时区的当前时间。"""
+    return datetime.now(UTC)
 
 
 class JSONEncodedDict(TypeDecorator):
@@ -45,7 +50,7 @@ class Account(Base):
     email_service = Column(String(50), nullable=False)  # 'tempmail', 'outlook', 'moe_mail'
     email_service_id = Column(String(255))  # 邮箱服务中的ID
     proxy_used = Column(String(255))
-    registered_at = Column(DateTime, default=datetime.utcnow)
+    registered_at = Column(DateTime, default=now_utc)
     last_refresh = Column(DateTime)  # 最后刷新时间
     expires_at = Column(DateTime)  # Token 过期时间
     status = Column(String(20), default='active')  # 'active', 'expired', 'banned', 'failed'
@@ -56,8 +61,8 @@ class Account(Base):
     subscription_type = Column(String(20))  # None / 'plus' / 'team'
     subscription_at = Column(DateTime)  # 订阅开通时间
     cookies = Column(Text)  # 完整 cookie 字符串，用于支付请求
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc)
+    updated_at = Column(DateTime, default=now_utc, onupdate=now_utc)
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
@@ -95,8 +100,8 @@ class EmailService(Base):
     enabled = Column(Boolean, default=True)
     priority = Column(Integer, default=0)  # 使用优先级
     last_used = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc)
+    updated_at = Column(DateTime, default=now_utc, onupdate=now_utc)
 
 
 class RegistrationTask(Base):
@@ -111,7 +116,7 @@ class RegistrationTask(Base):
     logs = Column(Text)  # 注册过程日志
     result = Column(JSONEncodedDict)  # 注册结果
     error_message = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc)
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
 
@@ -127,7 +132,7 @@ class Setting(Base):
     value = Column(Text)
     description = Column(Text)
     category = Column(String(50), default='general')  # 'general', 'email', 'proxy', 'openai'
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=now_utc, onupdate=now_utc)
 
 
 class CpaService(Base):
@@ -140,7 +145,7 @@ class CpaService(Base):
     api_token = Column(Text, nullable=False)  # API Token
     enabled = Column(Boolean, default=True)
     priority = Column(Integer, default=0)  # 优先级
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

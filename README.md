@@ -5,7 +5,7 @@
 这个版本的目标很直接: 把近期 OpenAI 注册链路里那些“昨天还能跑，今天突然翻车”的坑补上，让注册、登录、拿 token、打包运行都更稳一点。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 
 ## QQ群
 
@@ -49,7 +49,7 @@
 
 ## 环境要求
 
-- Python 3.10+
+- Python 3.11+（建议 3.11 或 3.12）
 - `uv`（推荐）或 `pip`
 
 ## 安装依赖
